@@ -5,6 +5,26 @@ const generateInvoicePDF = (bookingDetails, isPaid, logoUrl = '/assets/logo.png'
   const doc = new jsPDF();
   const logoWidth = 30;
   const logoHeight = 30;
+  const TRANSPORT_MINIMUM_RATE = 500;
+  const KM_RATE = 14;
+
+  // Helper function to calculate total price
+  const calculateTotalPrice = () => {
+    if (bookingDetails.workCategory === 'Transport') {
+      const kilometers = parseInt(bookingDetails.kilometers) || 0;
+      const roundTripKm = kilometers * 2;
+      const calculatedPrice = roundTripKm * KM_RATE;
+      return calculatedPrice < TRANSPORT_MINIMUM_RATE ? TRANSPORT_MINIMUM_RATE.toFixed(2) : calculatedPrice.toFixed(2);
+    } else if (bookingDetails.workCategory === 'Customize') {
+      const kilometers = parseInt(bookingDetails.kilometers) || 0;
+      const calculatedPrice = kilometers * KM_RATE;
+      return calculatedPrice > 500 ? calculatedPrice.toFixed(2) : '500.00';
+    } else {
+      const rate = 20; // Default rate per acre
+      const acres = parseFloat(bookingDetails.acre) || parseFloat(bookingDetails.gunta) / 40 || 0;
+      return (rate * acres).toFixed(2);
+    }
+  };
 
   // Handle logo (skip if fails)
   const img = new Image();
@@ -75,26 +95,46 @@ const generateInvoicePDF = (bookingDetails, isPaid, logoUrl = '/assets/logo.png'
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
     // Table headers
-    doc.text('Work', 20, 180);
-    doc.text('Area (Acres)', 80, 180);
-    doc.text('Rate (Rs./Acre)', 120, 180);
-    doc.text('Amount (Rs.)', 160, 180);
-    doc.line(20, 182, 190, 182);
-    // Table row
-    const workCategories = JSON.parse(process.env.REACT_APP_WORK_CATEGORIES || '[]');
-    const selectedCategory = workCategories.find(cat => cat.name === bookingDetails.workCategory);
-    const rate = selectedCategory ? selectedCategory.rate : 20;
-    const acres = parseFloat(bookingDetails.acre) || parseFloat(bookingDetails.gunta) / 40;
-    const amount = (rate * acres).toFixed(2);
-    doc.text(bookingDetails.workCategory, 20, 190);
-    doc.text(acres.toFixed(3), 80, 190);
-    doc.text(rate.toString(), 120, 190);
-    doc.text(amount, 160, 190);
-    doc.line(20, 192, 190, 192);
-    // Total
-    doc.setFont('helvetica', 'bold');
-    doc.text('Total:', 120, 200);
-    doc.text(`RS.${amount}`, 160, 200);
+    if (bookingDetails.workCategory === 'Transport' || bookingDetails.workCategory === 'Customize') {
+      doc.text('Work', 20, 180);
+      doc.text('Kilometers', 80, 180);
+      doc.text('Rate (Rs./Km)', 120, 180);
+      doc.text('Amount (Rs.)', 160, 180);
+      doc.line(20, 182, 190, 182);
+      // Table row
+      const rate = KM_RATE;
+      const amount = calculateTotalPrice();
+      doc.text(bookingDetails.workCategory, 20, 190);
+      doc.text(bookingDetails.kilometers || '0', 80, 190);
+      doc.text(rate.toString(), 120, 190);
+      doc.text(amount, 160, 190);
+      doc.line(20, 192, 190, 192);
+      // Total
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total:', 120, 200);
+      doc.text(`RS.${amount}`, 160, 200);
+    } else {
+      doc.text('Work', 20, 180);
+      doc.text('Area (Acres)', 80, 180);
+      doc.text('Rate (Rs./Acre)', 120, 180);
+      doc.text('Amount (Rs.)', 160, 180);
+      doc.line(20, 182, 190, 182);
+      // Table row
+      const workCategories = JSON.parse(process.env.REACT_APP_WORK_CATEGORIES || '[]');
+      const selectedCategory = workCategories.find(cat => cat.name === bookingDetails.workCategory);
+      const rate = selectedCategory ? selectedCategory.rate : 20;
+      const acres = parseFloat(bookingDetails.acre) || parseFloat(bookingDetails.gunta) / 40 || 0;
+      const amount = (rate * acres).toFixed(2);
+      doc.text(bookingDetails.workCategory, 20, 190);
+      doc.text(acres.toFixed(3), 80, 190);
+      doc.text(rate.toString(), 120, 190);
+      doc.text(amount, 160, 190);
+      doc.line(20, 192, 190, 192);
+      // Total
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total:', 120, 200);
+      doc.text(`RS.${amount}`, 160, 200);
+    }
 
     // Additional Details (below Invoice Details)
     doc.setFontSize(12);
@@ -102,11 +142,19 @@ const generateInvoicePDF = (bookingDetails, isPaid, logoUrl = '/assets/logo.png'
     doc.text('Additional Details', 20, 220);
     doc.setFont('helvetica', 'normal');
     const additionalDetails = [
-      `7/12 Number: ${bookingDetails.sevenTwelveNumber}`,
+      ...(bookingDetails.workCategory !== 'Transport' && bookingDetails.workCategory !== 'Customize' 
+        ? [`7/12 Number: ${bookingDetails.sevenTwelveNumber || 'Not provided'}`] 
+        : []),
       `Khata Number: ${bookingDetails.khataNumber || 'Not provided'}`,
       `Appointment Date: ${bookingDetails.date}`,
       `Time: ${Array.isArray(bookingDetails.time) ? bookingDetails.time.join(', ') : bookingDetails.time}`,
       `Remark: ${bookingDetails.remark || 'Not provided'}`,
+      ...(bookingDetails.workCategory === 'Transport' || bookingDetails.workCategory === 'Customize'
+        ? [
+            `Pickup Location: ${bookingDetails.pickupLocation || 'Not provided'}`,
+            `Delivery Location: ${bookingDetails.deliveryLocation || 'Not provided'}`
+          ]
+        : [])
     ];
     additionalDetails.forEach((line, index) => {
       doc.text(line, 20, 230 + index * 10);
