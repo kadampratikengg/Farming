@@ -78,7 +78,12 @@ router.post('/verify-payment', async (req, res) => {
     }
 
     // Validate required formData fields
-    const requiredFields = ['name', 'contactNumber', 'area', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time', 'sevenTwelveNumber'];
+    const requiredFields = ['name', 'contactNumber', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time'];
+    if (formData.workCategory === 'Transport' || formData.workCategory === 'Customize') {
+      requiredFields.push('pickupLocation', 'deliveryLocation', 'kilometers');
+    } else {
+      requiredFields.push('area', 'sevenTwelveNumber');
+    }
     const missingFields = requiredFields.filter(field => !formData[field]);
     if (missingFields.length > 0) {
       console.log('Missing required formData fields:', missingFields);
@@ -139,10 +144,15 @@ router.post('/verify-payment', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     console.log('Received POST /api/appointments with body:', req.body);
-    const { name, email, contactNumber, area, pincode, address, district, state, village, workCategory, date, time, remark, paymentMode, sevenTwelveNumber } = req.body;
+    const { name, email, contactNumber, area, pincode, address, district, state, village, workCategory, date, time, remark, paymentMode, sevenTwelveNumber, pickupLocation, deliveryLocation, kilometers } = req.body;
     
     // Validate required fields
-    const requiredFields = ['name', 'contactNumber', 'area', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time', 'sevenTwelveNumber'];
+    const requiredFields = ['name', 'contactNumber', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time'];
+    if (workCategory === 'Transport' || workCategory === 'Customize') {
+      requiredFields.push('pickupLocation', 'deliveryLocation', 'kilometers');
+    } else {
+      requiredFields.push('area', 'sevenTwelveNumber');
+    }
     const missingFields = requiredFields.filter(field => !req.body[field]);
     if (missingFields.length > 0) {
       console.log('Missing required fields:', missingFields);
@@ -191,7 +201,10 @@ router.post('/', async (req, res) => {
       time: timeArray, 
       remark,
       paymentStatus: paymentMode === 'cash' ? 'pending' : 'completed',
-      paymentMode: paymentMode || 'cash'
+      paymentMode: paymentMode || 'cash',
+      pickupLocation,
+      deliveryLocation,
+      kilometers
     });
     console.log('Appointment instance created:', appointment);
     await appointment.save();
@@ -224,8 +237,13 @@ router.get('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    const { name, email, contactNumber, area, pincode, address, district, state, village, workCategory, date, time, remark, sevenTwelveNumber, paymentMode, paymentStatus, attempted } = req.body;
-    const requiredFields = ['name', 'contactNumber', 'area', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time', 'sevenTwelveNumber'];
+    const { name, email, contactNumber, area, pincode, address, district, state, village, workCategory, date, time, remark, sevenTwelveNumber, paymentMode, paymentStatus, attempted, pickupLocation, deliveryLocation, kilometers } = req.body;
+    const requiredFields = ['name', 'contactNumber', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time'];
+    if (workCategory === 'Transport' || workCategory === 'Customize') {
+      requiredFields.push('pickupLocation', 'deliveryLocation', 'kilometers');
+    } else {
+      requiredFields.push('area', 'sevenTwelveNumber');
+    }
     const missingFields = requiredFields.filter(field => !req.body[field]);
     if (missingFields.length > 0) {
       console.log('Missing required fields for update:', missingFields);
@@ -272,7 +290,10 @@ router.put('/:id', async (req, res) => {
         remark,
         paymentMode,
         paymentStatus,
-        attempted
+        attempted,
+        pickupLocation,
+        deliveryLocation,
+        kilometers
       },
       { new: true, runValidators: true }
     );

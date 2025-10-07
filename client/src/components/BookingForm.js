@@ -46,7 +46,7 @@ function BookingForm() {
 
   // Get current system date and time (IST)
   const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000; // IST is UTC+5:30
+  const istOffset = 0.1 * 60 * 60 * 1000; // IST is UTC+5:30
   const currentIST = new Date(now.getTime() + istOffset);
   const currentDate = currentIST.toISOString().split('T')[0];
   const currentHours = currentIST.getHours();
@@ -66,15 +66,14 @@ function BookingForm() {
       startHour = Math.floor(nextSlotMinutes / 60);
       startMinute = nextSlotMinutes % 60;
     } else {
-      startHour = 9;
+      startHour = 7;
       startMinute = 0;
     }
 
-    const endHour = 17;
+    const endHour = 19;
     for (let hour = startHour; hour <= endHour; hour++) {
       const minutes = hour === startHour ? startMinute : 0;
       for (let minute = minutes; minute < 60; minute += 30) {
-        if (hour === endHour && minute > 0) break;
         const isPM = hour >= 12;
         const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
         const timeValue = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
@@ -108,7 +107,6 @@ function BookingForm() {
           limit: 5,
           countrycodes: 'in',
         },
-        headers: { 'User-Agent': NOMINATIM_USER_AGENT },
       });
       const suggestions = response.data;
       type === 'pickup' ? setPickupSuggestions(suggestions) : setDeliverySuggestions(suggestions);
@@ -123,7 +121,7 @@ function BookingForm() {
     if (formData.pickupCoords && formData.deliveryCoords) {
       const { lat: lat1, lon: lon1 } = formData.pickupCoords;
       const { lat: lat2, lon: lon2 } = formData.deliveryCoords;
-      const R = 6371; // Earth's radius in km
+      const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
       const a =
@@ -131,8 +129,8 @@ function BookingForm() {
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distance = R * c;
-      setFormData(prev => ({ ...prev, kilometers: distance.toFixed(2) }));
+      const distance = Math.ceil(R * c); // Round up to nearest integer
+      setFormData(prev => ({ ...prev, kilometers: distance.toString() }));
     }
   };
 
@@ -155,9 +153,9 @@ function BookingForm() {
         return;
       }
     } else if (name === 'kilometers') {
-      const kmRegex = /^[0-9]*\.?[0-9]*$/;
+      const kmRegex = /^[0-9]*$/; // Only integers
       if (value && !kmRegex.test(value)) {
-        toast.error('Kilometers must be a valid number.');
+        toast.error('Kilometers must be a whole number.');
         return;
       }
     } else if (name === 'gunta' || name === 'acre') {
@@ -190,6 +188,12 @@ function BookingForm() {
       handleSearch(value, 'pickup');
     } else if (name === 'deliveryLocation') {
       handleSearch(value, 'delivery');
+    } else if (name === 'sevenTwelveNumber') {
+      const sevenTwelveRegex = /^[A-Za-z0-9\/]*$/;
+      if (value && !sevenTwelveRegex.test(value)) {
+        toast.error('7/12 Number can only contain letters, numbers, and slashes.');
+        return;
+      }
     }
 
     setFormData(prev => ({ ...prev, [name]: value, time: name === 'date' ? '' : prev.time }));
@@ -239,13 +243,13 @@ function BookingForm() {
   const calculateTotalPrice = () => {
     const selectedCategory = workCategories.find(cat => cat.name === formData.workCategory);
     if (selectedCategory?.name === 'Transport') {
-      const kilometers = parseFloat(formData.kilometers) || 0;
-      const kmRate = selectedCategory.rate || 14; // Use rate from env
-      const roundTripKm = kilometers * 2; // Multiply by 2 for round trip
+      const kilometers = parseInt(formData.kilometers) || 0;
+      const kmRate = selectedCategory.rate || 14;
+      const roundTripKm = kilometers * 2;
       const calculatedPrice = roundTripKm * kmRate;
       return calculatedPrice < TRANSPORT_MINIMUM_RATE ? TRANSPORT_MINIMUM_RATE.toFixed(2) : calculatedPrice.toFixed(2);
     } else if (selectedCategory?.name === 'Customize') {
-      const kilometers = parseFloat(formData.kilometers) || 0;
+      const kilometers = parseInt(formData.kilometers) || 0;
       const kmRate = 14;
       const calculatedPrice = kilometers * kmRate;
       return calculatedPrice > 500 ? calculatedPrice.toFixed(2) : '500.00';
@@ -267,19 +271,23 @@ function BookingForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const requiredFields = ['name', 'contactNumber', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time', 'sevenTwelveNumber'];
-    if (formData.workCategory === 'Transport') {
+    const requiredFields = ['name', 'contactNumber', 'pincode', 'address', 'district', 'state', 'village', 'workCategory', 'date', 'time'];
+    if (formData.workCategory === 'Transport' || formData.workCategory === 'Customize') {
       requiredFields.push('pickupLocation', 'deliveryLocation', 'kilometers');
-    } else if (formData.workCategory !== 'Customize') {
-      requiredFields.push('area');
+    } else {
+      requiredFields.push('area', 'sevenTwelveNumber');
     }
-    const missingFields = requiredFields.filter(field => !formData[field]);
+    const missingFields = requiredFields.filter(field => !formData[field] || formData[field].toString().trim() === '');
     if (missingFields.length > 0) {
       toast.error(`Please fill in: ${missingFields.join(', ')}`);
       return;
     }
     if (!/^(\+)?\d{10,13}$/.test(formData.contactNumber)) {
       toast.error('Contact number must be 10-13 digits with optional + prefix.');
+      return;
+    }
+    if (formData.workCategory !== 'Transport' && formData.workCategory !== 'Customize' && !/^[A-Za-z0-9\/]+$/.test(formData.sevenTwelveNumber)) {
+      toast.error('7/12 Number can only contain letters, numbers, and slashes.');
       return;
     }
     if (formData.workCategory !== 'Transport' && formData.workCategory !== 'Customize' && !formData.gunta && !formData.acre) {
@@ -291,9 +299,9 @@ function BookingForm() {
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const selectedCategory = workCategories.find(cat => cat.name === formData.workCategory);
       const slotPrice = selectedCategory?.name === 'Transport'
-        ? Math.max(parseFloat(formData.kilometers) * 2 * (selectedCategory.rate || 14), TRANSPORT_MINIMUM_RATE) // Round trip: km * 2 * rate, min from env
+        ? Math.max(parseInt(formData.kilometers) * 2 * (selectedCategory.rate || 14), TRANSPORT_MINIMUM_RATE)
         : selectedCategory?.name === 'Customize'
-        ? (parseFloat(formData.kilometers) * 14 > 500 ? parseFloat(formData.kilometers) * 14 : 500)
+        ? (parseInt(formData.kilometers) * 14 > 500 ? parseInt(formData.kilometers) * 14 : 500)
         : selectedCategory ? selectedCategory.rate * (parseFloat(formData.acre) || parseFloat(formData.gunta) / 40) : 20;
 
       const bookingData = {
@@ -455,17 +463,19 @@ function BookingForm() {
               <p className='card-detail'><strong>District:</strong> {bookingDetails.district}</p>
               <p className='card-detail'><strong>State:</strong> {bookingDetails.state}</p>
               <p className='card-detail'><strong>Village:</strong> {bookingDetails.village}</p>
-              <p className='card-detail'><strong>7/12 Number:</strong> {bookingDetails.sevenTwelveNumber}</p>
+              {bookingDetails.workCategory !== 'Transport' && bookingDetails.workCategory !== 'Customize' && (
+                <p className='card-detail'><strong>7/12 Number:</strong> {bookingDetails.sevenTwelveNumber || 'None'}</p>
+              )}
               <p className='card-detail'><strong>Khata Number:</strong> {bookingDetails.khataNumber || 'None'}</p>
               <p className='card-detail'><strong>Work Category:</strong> {bookingDetails.workCategory}</p>
-              {bookingDetails.workCategory !== 'Transport' && (
+              {bookingDetails.workCategory !== 'Transport' && bookingDetails.workCategory !== 'Customize' && (
                 <>
                   <p className='card-detail'><strong>Area:</strong> {bookingDetails.area || 'None'}</p>
                   <p className='card-detail'><strong>Gunta:</strong> {bookingDetails.gunta || 'None'}</p>
                   <p className='card-detail'><strong>Acre:</strong> {bookingDetails.acre || 'None'}</p>
                 </>
               )}
-              {bookingDetails.workCategory === 'Transport' && (
+              {(bookingDetails.workCategory === 'Transport' || bookingDetails.workCategory === 'Customize') && (
                 <>
                   <p className='card-detail'><strong>Pickup Location:</strong> {bookingDetails.pickupLocation}</p>
                   <p className='card-detail'><strong>Delivery Location:</strong> {bookingDetails.deliveryLocation}</p>
@@ -592,7 +602,7 @@ function BookingForm() {
             ))}
           </select>
         </div>
-        {formData.workCategory === 'Transport' && (
+        {formData.workCategory === 'Transport' || formData.workCategory === 'Customize' ? (
           <div className='flex space-x-4'>
             <div className='flex-1'>
               <label>Pickup Location</label>
@@ -650,13 +660,12 @@ function BookingForm() {
                 value={formData.kilometers}
                 onChange={handleInputChange}
                 min='0'
-                step='0.1'
+                step='1'
                 required
               />
             </div>
           </div>
-        )}
-        {formData.workCategory !== 'Transport' && (
+        ) : (
           <div className='flex space-x-4'>
             <div className='flex-1'>
               <label>Gunta</label>
@@ -667,6 +676,7 @@ function BookingForm() {
                 onChange={handleInputChange}
                 min='0'
                 step='0.1'
+                required
               />
             </div>
             <div className='flex-1'>
@@ -678,28 +688,32 @@ function BookingForm() {
                 onChange={handleInputChange}
                 min='0'
                 step='0.001'
+                required
               />
             </div>
             <div className='flex-1'>
-            <label>7/12 Number</label>
-            <input
-              type='text'
-              name='sevenTwelveNumber'
-              value={formData.sevenTwelveNumber}
-              onChange={handleInputChange}
-              required
-            />
+              <label>7/12 Number</label>
+              <input
+                type='text'
+                name='sevenTwelveNumber'
+                value={formData.sevenTwelveNumber}
+                onChange={handleInputChange}
+                pattern='[A-Za-z0-9\/]+'
+                required
+              />
+            </div>
+            <div className='flex-1'>
+              <label>Khata Number</label>
+              <input
+                type='text'
+                name='khataNumber'
+                value={formData.khataNumber}
+                onChange={handleInputChange}
+              />
+            </div>
           </div>
-          <div className='flex-1'>
-            <label>Khata Number</label>
-            <input
-              type='text'
-              name='khataNumber'
-              value={formData.khataNumber}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className='whatsapp-link'>
+        )}
+        <div className='whatsapp-link'>
           <a
             href='https://bhulekh.mahabhumi.gov.in/'
             target='_blank'
@@ -708,11 +722,6 @@ function BookingForm() {
             Don’t know your 7/12 or Khata number? Click here to find it.
           </a>
         </div>
-          </div>
-        )}
-    
-        
-        
         <div>
           <label>Payment Mode</label>
           <select
