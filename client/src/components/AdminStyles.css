@@ -116,9 +116,9 @@
 
 @media (min-width: 600px) {
   .admin-panel .panel-header {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 }
 
@@ -130,8 +130,10 @@
 /* Search bar styles */
 .search-bar {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   align-items: center;
+  width: 100%;
 }
 
 .search-select,
@@ -140,19 +142,66 @@
   border: 1px solid #d1d5db;
   border-radius: 4px;
   font-size: 14px;
+  min-width: 150px;
 }
 
 .search-input {
   flex: 1;
 }
 
+.export-link {
+  padding: 8px 8px;
+  background-color: #3b82f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  text-align: center;
+  min-width: 50px;
+}
+
+.export-link:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.mark-attended-button,
+.mark-not-attended-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  min-width: 120px;
+  text-align: center;
+}
+
+.mark-attended-button {
+  background-color: #10b981;
+  color: white;
+}
+
+.mark-attended-button:hover {
+  background-color: #059669;
+  transform: translateY(-1px);
+}
+
+.mark-not-attended-button {
+  background-color: #ef4444;
+  color: white;
+}
+
+.mark-not-attended-button:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
 /* Button styles */
 .create-user-button,
 .logout-button,
-.export-all-button,
-.export-today-button,
-.export-future-button,
-.export-completed-button,
 .save-button,
 .cancel-button {
   padding: 10px 16px;
@@ -184,22 +233,6 @@
 
 .logout-button:hover {
   background-color: #4b5563;
-  transform: translateY(-1px);
-}
-
-.export-all-button,
-.export-today-button,
-.export-future-button,
-.export-completed-button {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.export-all-button:hover,
-.export-today-button:hover,
-.export-future-button:hover,
-.export-completed-button:hover {
-  background-color: #2563eb;
   transform: translateY(-1px);
 }
 
@@ -315,6 +348,14 @@
   transition: background-color 0.2s ease;
 }
 
+.action-button.delete {
+  color: #ef4444;
+}
+
+.action-button.delete:hover {
+  background-color: #fee2e2;
+}
+
 .edit-input, .edit-textarea {
   border: 1px solid #d1d5db; /* Light border */
   padding: 2px 4px;
@@ -358,65 +399,88 @@
 }
 
 @media (max-width: 768px) {
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-select,
+  .search-input,
+  .export-link,
+  .mark-attended-button,
+  .mark-not-attended-button {
+    width: 100%;
+    min-width: unset;
+    margin-bottom: 10px;
+  }
+
+  .button-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .create-user-button,
+  .logout-button {
+    width: 100%;
+  }
+
+  .appointment-grid {
+    grid-template-columns: 1fr;
+  }
+
   .admin-panel table,
   .admin-panel thead,
   .admin-panel tbody,
   .admin-panel th,
   .admin-panel td,
   .admin-panel tr {
-      display: block;
+    display: block;
   }
 
   .admin-panel thead {
-      display: none;
+    display: none;
   }
 
   .admin-panel td {
-      position: relative;
-      padding-left: 50%;
-      border: none;
-      border-bottom: 1px solid #ccc;
+    position: relative;
+    padding-left: 50%;
+    border: none;
+    border-bottom: 1px solid #ccc;
   }
 
   .admin-panel td::before {
-      position: absolute;
-      top: 10px;
-      left: 16px;
-      width: 45%;
-      white-space: nowrap;
-      font-weight: bold;
-      color: #555;
-      content: attr(data-label);
+    position: absolute;
+    top: 10px;
+    left: 16px;
+    width: 45%;
+    white-space: nowrap;
+    font-weight: bold;
+    color: #555;
+    content: attr(data-label);
   }
 
   .admin-panel tr {
-      margin-bottom: 20px;
-      border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e5e7eb;
   }
 
   .nav-links-vertical {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
   }
 
-  .left-link {
-      text-align: left;
-      color: #3b82f6;
-      text-decoration: underline;
-      font-size: 14px;
-  }
-
+  .left-link,
   .right-link {
-      text-align: right;
-      color: #3b82f6;
-      text-decoration: underline;
-      font-size: 14px;
+    text-align: center;
+    color: #3b82f6;
+    text-decoration: underline;
+    font-size: 14px;
   }
 
   .left-link:hover,
   .right-link:hover {
-      color: #2563eb;
+    color: #2563eb;
   }
 }
