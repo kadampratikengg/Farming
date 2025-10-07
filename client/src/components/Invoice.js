@@ -145,7 +145,9 @@ const generateInvoicePDF = (bookingDetails, isPaid, logoUrl = '/assets/logo.png'
       ...(bookingDetails.workCategory !== 'Transport' && bookingDetails.workCategory !== 'Customize' 
         ? [`7/12 Number: ${bookingDetails.sevenTwelveNumber || 'Not provided'}`] 
         : []),
-      `Khata Number: ${bookingDetails.khataNumber || 'Not provided'}`,
+      ...(bookingDetails.workCategory !== 'Transport' 
+        ? [`Khata Number: ${bookingDetails.khataNumber || 'Not provided'}`] 
+        : []),
       `Appointment Date: ${bookingDetails.date}`,
       `Time: ${Array.isArray(bookingDetails.time) ? bookingDetails.time.join(', ') : bookingDetails.time}`,
       `Remark: ${bookingDetails.remark || 'Not provided'}`,
