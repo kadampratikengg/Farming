@@ -28,10 +28,10 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // Mount appointment routes
-app.use('/appointments', appointmentRoutes);
+app.use('/api/appointments', appointmentRoutes);
 
 // Mount admin routes
-app.use('/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
