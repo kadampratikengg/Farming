@@ -12,12 +12,10 @@ const allowedOrigin = (process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3
 
 app.use(cors({
   origin: allowedOrigin,
-  methods: ['GET','POST','PUT','PATCH','DELETE'],
-  allowedHeaders: ['Content-Type','Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-
-
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -27,11 +25,13 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Mount appointment routes
+// Mount appointment routes with and without /api prefix
 app.use('/api/appointments', appointmentRoutes);
+app.use('/appointments', appointmentRoutes); // Added for frontend compatibility
 
-// Mount admin routes
+// Mount admin routes with and without /api prefix
 app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes); // Added for frontend compatibility
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -39,6 +39,12 @@ app.get('/health', (req, res) => {
   res.status(200).json({
     message: 'Server is running',
     database: dbState === 1 ? 'Connected' : 'Disconnected',
+    environment: {
+      NODE_ENV: process.env.NODE_ENV,
+      PORT: process.env.PORT,
+      REACT_APP_FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL,
+      MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set'
+    }
   });
 });
 
@@ -55,7 +61,12 @@ app.use((err, req, res, next) => {
 });
 
 // MongoDB connection
-console.log('MONGO_URI:', process.env.MONGO_URI);
+console.log('Environment variables:', {
+  NODE_ENV: process.env.NODE_ENV,
+  PORT: process.env.PORT,
+  REACT_APP_FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL,
+  MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set'
+});
 mongoose.connect(process.env.MONGO_URI, { 
   useNewUrlParser: true, 
   useUnifiedTopology: true 
