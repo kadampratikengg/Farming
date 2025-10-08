@@ -8,14 +8,15 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 
 // Configure CORS to allow requests from the frontend
-const allowedOrigin = process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000';
+const allowedOrigin = (process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 app.use(cors({
   origin: allowedOrigin,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET','POST','PUT','PATCH','DELETE'],
+  allowedHeaders: ['Content-Type','Authorization'],
   credentials: true
 }));
+
 
 
 // Request logging middleware

@@ -454,7 +454,9 @@ function BookingForm() {
       {showBookingCard && bookingDetails && (
         <div className='modal'>
           <div className='modal-content'>
+            
             <div className='appointment-card today-card'>
+              
               <h4 className='card-title'>{bookingDetails.name}</h4>
               <p className='card-detail'><strong>Email:</strong> {bookingDetails.email || 'Not provided'}</p>
               <p className='card-detail'><strong>Contact:</strong> {bookingDetails.contactNumber}</p>
@@ -500,6 +502,7 @@ function BookingForm() {
         </div>
       )}
       <form onSubmit={handleSubmit}>
+      <h1>Booking</h1>
         <div>
           <label>Name</label>
           <input

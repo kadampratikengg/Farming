@@ -16,6 +16,10 @@
   text-align: center;
 }
 
+h1{
+  text-align: center;
+}
+
 .booking-form-container form {
   display: flex;
   flex-direction: column;
