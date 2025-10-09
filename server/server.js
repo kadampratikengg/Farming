@@ -8,14 +8,18 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 
 // Configure CORS to allow requests from the frontend
-const allowedOrigin = (process.env.REACT_APP_FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+const allowedOrigin = [
+  process.env.REACT_APP_FRONTEND_URL, 'https://farming-jade.vercel.app',
+];
 
-app.use(cors({
-  origin: allowedOrigin,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -43,8 +47,8 @@ app.get('/health', (req, res) => {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT,
       REACT_APP_FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL,
-      MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set'
-    }
+      MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set',
+    },
   });
 });
 
@@ -57,7 +61,9 @@ app.use((req, res, next) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error', details: err.message });
+  res
+    .status(500)
+    .json({ error: 'Internal server error', details: err.message });
 });
 
 // MongoDB connection
@@ -65,16 +71,21 @@ console.log('Environment variables:', {
   NODE_ENV: process.env.NODE_ENV,
   PORT: process.env.PORT,
   REACT_APP_FRONTEND_URL: process.env.REACT_APP_FRONTEND_URL,
-  MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set'
+  MONGO_URI: process.env.MONGO_URI ? '[REDACTED]' : 'Not set',
 });
-mongoose.connect(process.env.MONGO_URI, { 
-  useNewUrlParser: true, 
-  useUnifiedTopology: true 
-})
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(async () => {
     console.log('Connected to MongoDB');
-    const collections = await mongoose.connection.db.listCollections().toArray();
-    const appointmentCollection = collections.find(col => col.name === 'appointments');
+    const collections = await mongoose.connection.db
+      .listCollections()
+      .toArray();
+    const appointmentCollection = collections.find(
+      (col) => col.name === 'appointments'
+    );
     console.log('Appointments collection exists:', !!appointmentCollection);
     if (!appointmentCollection) {
       console.warn('Appointments collection not found. Creating...');
