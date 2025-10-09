@@ -500,6 +500,7 @@ function BookingForm() {
         </div>
       )}
       <form onSubmit={handleSubmit}>
+        <h1>Booking</h1>
         <div>
           <label>Name</label>
           <input
